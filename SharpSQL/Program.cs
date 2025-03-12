@@ -33,32 +33,34 @@ Options:
     -help                      - Show help
 
 Methods:
-    Get-SQLInstanceDomain      - Get SQL instances within current domain via user and computer SPNs (no parameters required)
-    Get-Databases              - Get available databases 
-    Get-DBUser                 - Get database user via USER_NAME
-    Get-GroupMembership        - Get group member for current user ('guest' or 'sysadmin')
-    Get-Hash                   - Get hash via xp_dirtree, works nicely with impacket-ntlmrelayx
-    Get-ImpersonableUsers      - Get impersonable users 
-    Get-LinkedServers          - Get linked SQL servers
-    Get-LinkedPrivs            - Get current user privs for linked server
-    Get-Sysadmins              - Get sysadmin users
-    Get-SystemUser             - Get system user via SYSTEM_USER
-    Get-SQLQuery               - Execute raw SQL query
-    Get-Triggers               - Get SQL server triggers
-    Get-Users                  - Get users from syslogins
-    Get-UserPrivs              - Get current user server privileges
-    Check-Cmdshell             - Check whether xp_cmdshell is enabled on instance
-    Check-LinkedCmdshell       - Check whether xp_cmdshell is enabled on linked server
-    Clear-CLRAsm               - Drop procedure and assembly (run before Invoke-CLRAsm if previous error)
-    Enable-Cmdshell            - Enable xp_cmdshell on instance
-    Enable-LinkedCmdshell      - Enable xp_cmdshell on linked server
-    Invoke-OSCmd               - Invoke xp_cmdshell on instance
-    Invoke-LinkedOSCmd         - Invoke xp_cmdshell on linked server
-    Invoke-ExternalScript      - Invoke external python script command execution 
-    Invoke-OLEObject           - Invoke OLE wscript command execution
-    Invoke-CLRAsm              - Invoke CLR assembly procedure command execution
-    Invoke-UserImpersonation   - Impersonate user and execute query
-    Invoke-DBOImpersonation    - Impersonate dbo on msdb and execute query
+    Get-SQLInstanceDomain           - Get SQL instances within current domain via user and computer SPNs (no parameters required)
+    Check-SQLInstanceDomainAccess   - Checks access across all SQL instances within current domain
+    Check-SQLInstanceAccess         - Checks access for specified SQL instances
+    Get-Databases                   - Get available databases 
+    Get-DBUser                      - Get database user via USER_NAME
+    Get-GroupMembership             - Get group member for current user ('guest' or 'sysadmin')
+    Get-Hash                        - Get hash via xp_dirtree, works nicely with impacket-ntlmrelayx
+    Get-ImpersonableUsers           - Get impersonable users 
+    Get-LinkedServers               - Get linked SQL servers
+    Get-LinkedPrivs                 - Get current user privs for linked server
+    Get-Sysadmins                   - Get sysadmin users
+    Get-SystemUser                  - Get system user via SYSTEM_USER
+    Get-SQLQuery                    - Execute raw SQL query
+    Get-Triggers                    - Get SQL server triggers
+    Get-Users                       - Get users from syslogins
+    Get-UserPrivs                   - Get current user server privileges
+    Check-Cmdshell                  - Check whether xp_cmdshell is enabled on instance
+    Check-LinkedCmdshell            - Check whether xp_cmdshell is enabled on linked server
+    Clear-CLRAsm                    - Drop procedure and assembly (run before Invoke-CLRAsm if previous error)
+    Enable-Cmdshell                 - Enable xp_cmdshell on instance
+    Enable-LinkedCmdshell           - Enable xp_cmdshell on linked server
+    Invoke-OSCmd                    - Invoke xp_cmdshell on instance
+    Invoke-LinkedOSCmd              - Invoke xp_cmdshell on linked server
+    Invoke-ExternalScript           - Invoke external python script command execution 
+    Invoke-OLEObject                - Invoke OLE wscript command execution
+    Invoke-CLRAsm                   - Invoke CLR assembly procedure command execution
+    Invoke-UserImpersonation        - Impersonate user and execute query
+    Invoke-DBOImpersonation         - Impersonate dbo on msdb and execute query
 
 Examples:
 
@@ -156,56 +158,98 @@ Examples:
 
 
 
-        public static void GetSQLInstanceDomain()
+        public static List<String> GetSQLInstanceDomain()
         {
-            string[] spns = { };
-            List<string> list = new List<string>(spns.ToList());
-            using (var context = new PrincipalContext(ContextType.Domain))
+            try
             {
-                using (var searcher = new PrincipalSearcher(new ComputerPrincipal(context)))
+                string[] spns = { };
+                List<string> list = new List<string>(spns.ToList());
+                using (var context = new PrincipalContext(ContextType.Domain))
                 {
-                    foreach (var result in searcher.FindAll())
+                    using (var searcher = new PrincipalSearcher(new ComputerPrincipal(context)))
                     {
-                        DirectoryEntry de = result.GetUnderlyingObject() as DirectoryEntry;
-                        foreach (string spn in de.Properties["serviceprincipalname"])
+                        foreach (var result in searcher.FindAll())
                         {
-                            Match cont = Regex.Match(spn, "MSSQL");
-                            if (cont.Success)
+                            DirectoryEntry de = result.GetUnderlyingObject() as DirectoryEntry;
+                            foreach (string spn in de.Properties["serviceprincipalname"])
                             {
-                                list.Add(spn);
+                                Match cont = Regex.Match(spn, "MSSQL");
+                                if (cont.Success)
+                                {
+                                    list.Add(spn);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            using (var context = new PrincipalContext(ContextType.Domain))
-            {
-                using (var searcher = new PrincipalSearcher(new UserPrincipal(context)))
+                using (var context = new PrincipalContext(ContextType.Domain))
                 {
-                    foreach (var result in searcher.FindAll())
+                    using (var searcher = new PrincipalSearcher(new UserPrincipal(context)))
                     {
-                        DirectoryEntry de = result.GetUnderlyingObject() as DirectoryEntry;
-                        foreach (string spn in de.Properties["serviceprincipalname"])
+                        foreach (var result in searcher.FindAll())
                         {
-                            Match cont = Regex.Match(spn, "MSSQL");
-                            if (cont.Success)
+                            DirectoryEntry de = result.GetUnderlyingObject() as DirectoryEntry;
+                            foreach (string spn in de.Properties["serviceprincipalname"])
                             {
-                                list.Add(spn);
+                                Match cont = Regex.Match(spn, "MSSQL");
+                                if (cont.Success)
+                                {
+                                    list.Add(spn);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            spns = list.ToArray();
-            Console.WriteLine("[*] Get-SQLInstanceDomain: ");
-            foreach (var i in spns)
+                spns = list.ToArray();
+                Console.WriteLine("[*] Get-SQLInstanceDomain: ");
+                foreach (var i in spns)
+                {
+                    Console.WriteLine(i);
+                }
+
+                return list;
+            } catch
             {
-                Console.WriteLine(i);
+                Console.WriteLine("[x] Error: not in a domain?");
+                return new List<String>();
             }
         }
 
+        public static void CheckSQLInstanceDomainAccess()
+        {
+            List<String> spns_to_check = GetSQLInstanceDomain();
+            if (spns_to_check.Count > 0)
+            {
+                Console.WriteLine("[i] Found " + spns_to_check.Count + " instances. Checking access...");
+
+                foreach(String spn in spns_to_check)
+                {
+                    Console.WriteLine("Trying instance: " + spn.Split('/')[1] + " ...");
+                    _GetSQLConnectionTest(spn.Split('/')[1]);
+                }
+            }
+        }
+
+        private static void _GetSQLConnectionTest(String instance)
+        {
+            Console.WriteLine("Trying instance: " + instance + " ...");
+            // from PowerUpSQL.ps1:182
+            // $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=$TimeOut$AppNameString$EncryptString$TrustCertString$WorkstationString"
+            String connection_string = "Server=" + instance + ";Database=Master;Integrated Security=SSPI;";
+            SqlConnection connection = new SqlConnection(connection_string);
+
+            try
+            {
+                connection.Open();
+                Console.WriteLine("[+] Access successful!");
+            }
+            catch
+            {
+                Console.WriteLine("[-] Access failed");
+            }
+        }
 
 
         static void Main(string[] args)
@@ -230,18 +274,24 @@ Examples:
             if (string.Equals(command, "Get-SQLInstanceDomain", StringComparison.CurrentCultureIgnoreCase))
             {
                 GetSQLInstanceDomain();
-                Environment.Exit(0);
+                return;
+            }
+
+            if (string.Equals(command, "Check-SQLInstanceDomainAccess", StringComparison.CurrentCultureIgnoreCase))
+            {
+                CheckSQLInstanceDomainAccess();
+                return;
             }
 
 
             if (string.IsNullOrEmpty(Config.instance))
             {
                 Console.WriteLine("[!] No SQL instance supplied!");
-                Environment.Exit(0);
+                return;
             }
 
 
-            string conStr = $"Server = {Config.instance}; Database = {Config.db}; Integrated Security = True;";
+            string conStr = $"Server = {Config.instance}; Database = {Config.db}; Integrated Security = SSPI;";
             SqlConnection con = new SqlConnection(conStr);
 
             try
@@ -252,7 +302,13 @@ Examples:
             catch
             {
                 Console.WriteLine($"[-] Authentication to: {Config.instance} failed");
-                System.Environment.Exit(0);
+                return;
+            }
+
+            if (string.Equals(command, "Check-SQLInstanceAccess", StringComparison.CurrentCultureIgnoreCase))
+            {
+                // if all we wanted to do is check access, we're done at this point
+                return;
             }
 
 
@@ -349,7 +405,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No query supplied!");
                     Console.WriteLine("SharpSQL.exe Get-SQLQurery -Instance sql.server -Query \"select @@servername\"");
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -375,7 +431,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No linked instance supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Check-LinkedCmdshell -Instance sql.server -LinkedInstance linked.sql.server");
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -394,7 +450,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No linked instance supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Get-LinkedPrivs -Instance sql.server -LinkedInstance linked.sql.server");
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -411,7 +467,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No user or query supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Invoke-UserImpersonation -Instance sql.server -User sa -Query 'select user_name()'");
-                    Environment.Exit(0);
+                    return;
                 }
 
                 else
@@ -430,7 +486,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No query supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Invoke-DBOImpersonation -Instance sql.server -Query 'select user_name()'");
-                    Environment.Exit(0);
+                    return;
                 }
 
                 else
@@ -468,7 +524,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No linked instance supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Enable-LinkedCmdshell -Instance sql.server -LinkedInstance linked.sql.server");
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -492,7 +548,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No ip supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Get-Hash -Instance sql.server -ip 10.10.10.10");
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -536,7 +592,7 @@ Examples:
                 {
                     Console.WriteLine("[!] No linkedinstance supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Invoke-LinkedOSCmd -Instance sql.server -LinkedInstance linked.sql.server");
-                    Environment.Exit(0);
+                    return;
                 }
                 else
                 {
@@ -567,7 +623,6 @@ Examples:
                 Console.WriteLine($"{query}");
                 executeQuery("DROP PROCEDURE cmdExec; DROP ASSEMBLY custom_asm;", con);
             }
-
 
             else
             {
