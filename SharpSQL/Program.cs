@@ -237,8 +237,11 @@ Examples:
 
                 foreach(String spn in spns_to_check)
                 {
-                    Console.WriteLine("Trying instance: " + spn.Split('/')[1] + " ...");
-                    _GetSQLConnectionTest(spn.Split('/')[1]);
+                    // SPN format: <service class>/<host>:<port>/<service name>
+                    // SPN lists port with a semicolon, instance needs it with a comma
+                    String instance = spn.Split('/')[1].Replace(':', ',');
+                    Console.WriteLine("Trying instance: " + instance + " ...");
+                    _GetSQLConnectionTest(instance);
                 }
             }
         }
