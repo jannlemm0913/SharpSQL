@@ -277,6 +277,7 @@ Examples:
             {
                 con.Open();
                 Console.WriteLine("[+] Access successful!");
+                con.Close();
             }
             catch
             {
@@ -683,6 +684,9 @@ Examples:
                 ShowHelp();
                 return;
             }
+
+            // see if this helps
+            con.Close();
         }
     }
 }
