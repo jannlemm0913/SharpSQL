@@ -15,7 +15,7 @@ namespace SharpSQL
         {
             Console.WriteLine(
 @"
-SharpSQL by @mlcsec
+SharpSQL fork by @jannlemm0913, original by @mlcsec
 
 Usage:
 
@@ -23,25 +23,25 @@ Usage:
 
 Options:
 
-    -Instance                  - The instance to taget
-    -db                        - The db to connect to (default: master)
+    -Instance                  - The instance to target
+    -Db                        - The db to connect to (default: master)
     -LinkedInstance            - The linked instance to target
-    -ip                        - The IP to xp_dirtree (share: /pwn)
+    -Ip                        - The IP to xp_dirtree (share: /pwn)
     -User                      - SQL Server or domain account (""domain\user"") to authenticate with.
     -Password                  - SQL Server or domain account password to authenticate with.
     -Impersonate               - The database user to impersonate
     -Command                   - The command to execute (default: whoami - Invoke-OSCmd, Invoke-LinkedOSCmd, Invoke-ExternalScript, and Invoke-OLEObject)
     -Query                     - The raw SQL query to execute
     -Verbose                   - Enable verbose output
-    -help                      - Show help
+    -Help                      - Show help
 
 Methods:
     Get-SQLInstanceDomain           - Get SQL instances within current domain via user and computer SPNs (no parameters required)
     Check-SQLInstanceDomainAccess   - Checks access across all SQL instances within current domain
-    Check-SQLInstanceAccess         - Checks access for specified SQL instances
+    Check-SQLInstanceAccess         - Checks access for specified SQL instance
     Get-Databases                   - Get available databases 
     Get-DBUser                      - Get database user via USER_NAME
-    Get-GroupMembership             - Get group member for current user ('guest' or 'sysadmin')
+    Get-GroupMembership             - Get group membership for current user ('guest' or 'sysadmin')
     Get-Hash                        - Get hash via xp_dirtree, works nicely with impacket-ntlmrelayx
     Get-ImpersonableUsers           - Get impersonable users 
     Get-LinkedServers               - Get linked SQL servers
@@ -62,12 +62,14 @@ Methods:
     Invoke-ExternalScript           - Invoke external python script command execution 
     Invoke-OLEObject                - Invoke OLE wscript command execution
     Invoke-CLRAsm                   - Invoke CLR assembly procedure command execution
-    Invoke-UserImpersonation        - Impersonate user and execute query
+    Invoke-UserImpersonation        - Impersonate database user and execute query
     Invoke-DBOImpersonation         - Impersonate dbo on msdb and execute query
 
 Examples:
 
     SharpSQL.exe Get-SQLInstanceDomain
+    SharpSQL.exe Check-SQLInstanceDomainAccess -User ""sa"" -Password ""***""
+    SharpSQL.exe Check-SQLInstanceAccess -Instance sql.server -User ""DOMAIN\User"" -Password ""***""
     SharpSQL.exe Get-UserPrivs -Instance sql.server
     SharpSQL.exe Get-Sysadmins -Instance sql.server
     SharpSQL.exe Get-LinkedServers -Instance sql.server
